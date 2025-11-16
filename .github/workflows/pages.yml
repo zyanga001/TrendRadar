@@ -1,10 +1,9 @@
-name: GitHub Pages
+name: Deploy static content to Pages
 
 on:
   push:
-    branches:
-      - master       # 你的仓库默认分支叫 master，就用这个
-  workflow_dispatch:  # 可以在 Actions 里手动 Run workflow
+    branches: ["master"]   # 你的默认分支叫 master
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,47 +15,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run TrendRadar crawler
-        env:
-          # 如果以后要用企业微信 / TG 等推送，可以在这里加环境变量，
-          # 先不用的话，这里保持空就行
-          # WEWORK_WEBHOOK_URL: ${{ secrets.WEWORK_WEBHOOK_URL }}
-          # TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          # TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-          RUN_MODE: "daily"
-        run: |
-          python main.py
-
-      - name: Upload static site
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./output     # TrendRadar 会把生成的 HTML 放在 output 目录
+          path: '.'          # 直接把仓库根目录（含 index.html）上传
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
